@@ -39,7 +39,7 @@
 #define end(p) (*p == '\0')
 
 
-#include <stdbool.h>
-bool peekstr(const char *buf, const char* str, int len );
+//#include <stdbool.h>
+int peekstr(const char *buf, const char* str, int len );
 
 #endif /* !SCANNER_H */

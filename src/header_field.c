@@ -5,7 +5,7 @@
  * Distributed under terms of the MIT license.
  */
 #include <stdlib.h>
-#include "h3.h"
+#include "..\include\h3.h"
 
 HeaderField * h3_header_field_new() {
     HeaderField *f = malloc( sizeof(HeaderField) );

@@ -1,6 +1,6 @@
 /*
- * request_header.c
- * Copyright (C) 2014 c9s <c9s@c9smba.local>
+ * response_header.c
+ * Copyright (C) 2017 c9s <c9s@c9smba.local>
  *
  * Distributed under terms of the MIT license.
  */
@@ -14,21 +14,23 @@
 #include "..\include\h3.h"
 #include "scanner.h"
 
-RequestHeader* h3_request_header_new() {
-    RequestHeader *h = malloc(sizeof(RequestHeader));
-    h->RequestLineStart = NULL;
-    h->RequestLineEnd = NULL;
-    h->RequestMethod = NULL;
-    h->RequestMethodLen = 0;
-    h->RequestURI = NULL;
-    h->RequestURILen = 0;
+ResponseHeader* h3_response_header_new() {
+	ResponseHeader *h = malloc(sizeof(ResponseHeader));
+	h->ResponseLineStart = NULL;
+	h->ResponseLineEnd = NULL;
+	h->HTTPVersion = NULL;
+	h->HTTPVersionLen = 0;
+	h->ResponseStatusCode = NULL;
+	h->ResponseStatusCodeLen = 0;
     h->HTTPVersion = NULL;;
     h->HTTPVersionLen = 0;
+	h->ResponseStatusDescription = NULL;
+	h->ResponseStatusDescriptionLen = 0;
 	h->HeadList = NULL;
     return h;
 }
 
-void h3_request_header_free(RequestHeader *header) {
+void h3_response_header_free(ResponseHeader *header) {
 	h3_header_field_list_free(header->HeadList);
     free(header);
 }
@@ -39,41 +41,36 @@ void h3_request_header_free(RequestHeader *header) {
  *
  * Return NULL if parse failed.
  */
-const char * h3_request_line_parse(RequestHeader *header, const char *body, int bodyLength) {
+const char * h3_response_line_parse(ResponseHeader *header, const char *body, int bodyLength) {
     // Parse the request-line
     // http://tools.ietf.org/html/rfc2616#section-5.1
     // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
     const char * p = body;
-    header->RequestLineStart = body;
+    header->ResponseLineStart = body;
 
 	while (notend(p) && !isspace((unsigned char)*p)) p++;
+	if (strncmp(body, "HTTP", 4))
+	{
+		return NULL;
+	}
 
-    if ( end(p) || iscrlf(p) ) {
-        // set error
-        return NULL;
-    }
-
-    header->RequestMethod = body;
-    header->RequestMethodLen = p - body;
-
+	// Skip space and parse HTTP-Version
+	header->HTTPVersion = body;
+	header->HTTPVersionLen = p - body;
     // Skip space
-    // parse RequestURI
+    // parse Status Code
 	while (isspace((unsigned char)*p) && notcrlf(p) && notend(p)) p++;
-    
-    header->RequestURI = p; 
+    header->ResponseStatusCode = p; 
 	while (!isspace((unsigned char)*p) && notcrlf(p) && notend(p)) p++;
-    header->RequestURILen = p - header->RequestURI; 
+	header->ResponseStatusCodeLen = p - header->ResponseStatusCode;
 
-    // Skip space and parse HTTP-Version
-    if ( iscrlf(p) || end(p) ) {
-        header->HTTPVersion = H3_DEFAULT_HTTP_VERSION;
-    } else {
-		while (isspace((unsigned char)*p) && notcrlf(p)) p++;
+	// Skip space
+	// parse Status Description
+	while (isspace((unsigned char)*p) && notcrlf(p) && notend(p)) p++;
+	header->ResponseStatusDescription = p;
+	while (!isspace((unsigned char)*p) && notcrlf(p) && notend(p)) p++;
+	header->ResponseStatusDescriptionLen = p - header->ResponseStatusDescription;
 
-        header->HTTPVersion = p; 
-		while (!isspace((unsigned char)*p) && notcrlf(p)) p++;
-        header->HTTPVersionLen = p - header->HTTPVersion;
-    }
     return p;
 }
 
@@ -82,9 +79,9 @@ const char * h3_request_line_parse(RequestHeader *header, const char *body, int 
 /**
  * Parse header body
  */
-int h3_request_header_parse(RequestHeader *header, const char *body, int bodyLength) {
+int h3_response_header_parse(ResponseHeader *header, const char *body, int bodyLength) {
 	int i = 0;
-	const char *p = h3_request_line_parse(header, body, bodyLength);
+	const char *p = h3_response_line_parse(header, body, bodyLength);
 
     if (p == NULL) {
         return H3_ERR_REQUEST_LINE_PARSE_FAIL;

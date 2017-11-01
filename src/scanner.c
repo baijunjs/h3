@@ -4,10 +4,10 @@
  *
  * Distributed under terms of the MIT license.
  */
-#include <stdbool.h>
+//#include <stdbool.h>
 #include "scanner.h"
 
-bool peekstr(const char *buf, const char* str, int len ) {
+int peekstr(const char *buf, const char* str, int len ) {
     int i = 0;
     buf++;
     for (i=0; i < len; i++ ) {
